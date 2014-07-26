@@ -1,3 +1,16 @@
+---
+title: "Body Movement Predictions"
+output: html_document
+---
+
+## Summary
+This study attempted to classify movements based on movement data recorded through sensors worn by the subjects. Based on a Bagged Classification and Regression Tree Algorithm (CART) cross validated prediction accuracy was 98.1%.
+
+## Data Processing
+
+The data was a bit messy, hence the following processing was undertaken. There were no transformations applied because a subset of the data was used.
+
+```{r, cache=TRUE}
 # Load Data
 training <- read.csv("pml-training.csv")
 testing <- read.csv("pml-testing.csv")
@@ -77,8 +90,13 @@ testing$skewness_yaw_forearm <- as.numeric(testing$skewness_yaw_forearm)
 testing$max_yaw_forearm <- as.numeric(testing$max_yaw_forearm)
 testing$min_yaw_forearm <- as.numeric(testing$min_yaw_forearm)
 testing$amplitude_yaw_forearm <- as.numeric(testing$amplitude_yaw_forearm)
+```
 
-# Data Exploration
+## Data Exploration
+
+A correlation matrix was calculated on the numeric variables.
+
+```{r, cache=TRUE}
 library(corrplot)
 corrSubset <- subset(training[,sapply(training,is.numeric)], 
                      select = -c(kurtosis_yaw_belt, 
@@ -89,7 +107,11 @@ corrSubset <- subset(training[,sapply(training,is.numeric)],
                                  skewness_yaw_forearm))
 correlation <- cor(corrSubset, use = "na.or.complete")
 corrplot(correlation, order = "hclust", tl.pos = "n")
+```
 
+Due to the number of variables and considering the colinearity, the variables with greater than 5% correlation with the response variable were extracted:
+
+```{r, cache=TRUE}
 classeCor <- sapply(names(corrSubset), function(col) {
     cor(corrSubset[,col], as.numeric(training$classe))
 })
@@ -97,7 +119,13 @@ classeCor <- classeCor[!is.na(classeCor)]
 classeCor <- classeCor[abs(classeCor) >= 0.05]
 classeCor <- classeCor[order(abs(classeCor), decreasing = TRUE)]
 correlatedVars <- names(classeCor)
+```
 
+## Data Modeling
+
+To compare the predictive capacity of the variables correlated to the response and including all the variables a Classification and Regression Tree (CART) model was built for each subset:
+
+```{r, cache=TRUE}
 # Data Modeling
 library(caret)
 library(doMC)
@@ -119,7 +147,13 @@ cartModel <- train(x = subset(training, select = -classe),
                    method = "rpart",
                    trControl = controlObject)
 print(cartModel)
+```
 
+Including all the variables over the variables correlated to the response does not add significantly to the accuracy, hence only the latter set of variables was used.
+
+The Naive Bayes and Bagged CART models were fitted to the dataset.
+
+```{r, cache=TRUE}
 ## Naive Bayes Model Using Highly Correlated Variables
 naiveBayesModel <- train(x = subset(training, select = correlatedVars),
                          y = training$classe,
@@ -137,3 +171,8 @@ print(baggedCartModel)
 # Data Prediction
 
 predictions <- predict(baggedCartModel, newdata = testing)
+```
+
+The Bagged CART model has an accuracy of 98.1% compared to an accuracy of 65.4% for Naive Bayes using 10-fold cross validation.  
+
+Finally, predictions were made using the Bagged CART model and found to be 100% accurate for the test cases.
