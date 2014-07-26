@@ -1,1 +1,3 @@
 *.csv
+analysis_cache/
+analysis_files/
