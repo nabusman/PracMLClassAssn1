@@ -109,6 +109,8 @@ correlation <- cor(corrSubset, use = "na.or.complete")
 corrplot(correlation, order = "hclust", tl.pos = "n")
 ```
 
+Overall, you can see there is significant correlation between variables. Intuitively, this makes sense because if the subject moves in a certain way multiple times the readings from the various sensors will be similar (and hence correlated). This means that if it can be determined which movements are correlated with each movement class then we should be able to predict the class given movement information.
+
 Due to the number of variables and considering the colinearity, the variables with greater than 5% correlation with the response variable were extracted:
 
 ```{r, cache=TRUE}
